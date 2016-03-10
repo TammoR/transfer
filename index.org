@@ -1,0 +1,82 @@
+#+TITLE: The Hamming Machine
+# #+AUTHOR: Yau Group meeting
+#+DATE: March 10, 2016
+#+email: Tammo Rukat
+#+AUTHOR: Tammo Rukat
+
+# Careful: the ox-reveal.el that is acutally being used is in .emacs.d/elpa/ox-reveal-20150408.831
+#+OPTIONS: reveal_single_file:t 
+#+OPTIONS: reveal_center:t reveal_progress:t reveal_history:nil reveal_control:f
+#+OPTIONS: reveal_mathjax:t reveal_rolling_links:f reveal_keyboard:t reveal_overview:t num:nil
+#+OPTIONS: reveal_width:1920 reveal_height:1080
+#+OPTIONS: toc:1
+#+REVEAL_MARGIN: 0.2
+#+REVEAL_MIN_SCALE: 0.3
+#+REVEAL_MAX_SCALE: 2.5
+#+REVEAL_TRANS: cube 
+# default|cube|page|concave|zoom|linear|fade|none.
+#+REVEAL_THEME: sky
+ # sky, league, moon, solarized, league
+#+REVEAL_HLEVEL: 1
+#+REVEAL_PLUGINS: (highlight markdown notes)
+# #+REVEAL_EXTRA_CSS: ./local.css
+#+REVEAL_SLIDE_NUMBER: t
+#+REVEAL_DEFAULT_FRAG_STYLE: roll-in
+#+OPTIONS: org-reveal-center:t
+
+* Basics
+#+ATTR_REVEAL: :frag (appear appear appear appear) :frag_idx (1 2 3 4)
+- Based on the hamming distance between two binary vectors ${h(\mathbf{x},\mathbf{u})}$ we construct a probability distribution of ${\mathbf{x}}$ given ${\mathbf{u}}$ with a dispersion parameter ${\lambda}$: $$ p(\mathbf{x}|\mathbf{u}) \propto \exp\left[ -\lambda h(\mathbf{x},\mathbf{u}) \right] $$
+- We assume a set of ${M}$ binary vectors ${\mathbf{u}_{1\ldots M}}$, that we call *codes*.
+- Each observations ${\mathbf{x} }$ is generated from a subset of these codes: $$ p(\mathbf{x}|\mathbf{U},\mathbf{s},\lambda) \propto \prod\limits_m p(\mathbf{x}|\mathbf{u}_m,\lambda)^{s_m} = \prod\limits_d \exp\left[ \sum_m s_m \lambda h(x_d,u_{md}) \right]$$
+- We find the normalised probability to be sigmoidal: $$ p(x_d = 1|\mathbf{s}, \mathbf{U}, \lambda) = \frac{1}{1+\exp\left[ \lambda \sum_m s_m (2u_{md} - 1) \right]} $$
+
+* Sigmoid Belief Net
+- $$ p(x_d = 1|\mathbf{s}, \mathbf{U}, \lambda) =\frac{1}{1+\exp\left[ \lambda \sum_m s_m (2u_{md} - 1) \right]} $$
+
+
+[[file:figures/hm0_1.png]]
+
+* Inference
+#+ATTR_REVEAL: :frag (appear appear appear) :frag_idx (1 2 3)
+- Gibbs sampling for ${\mathbf{u}}$ and ${\mathbf{s}}$ with uninformative priors.
+- Metropolis Hastings for $\lambda$ with inverse gamma prior and adaptive Gaussian proposal distribution.
+- Precomputing quantities of the form $$ \log(1+e^{-\lambda m}); \,\,\,\, \text{for} \, m \in \{-M,\ldots,-1,0,1,\ldots,M\} $$ speeds up the computation.
+
+* Multilayer Hamming Machine
+[[file:figures/hm2.png]]
+- The lower layer acts like a prior on the peripheral layer.
+
+* Toy Example
+[[file:figures/a4_10_5.gif]]
+
+* Sparsity priors
+1. Independent Bernoulli prior on every single code unit ${u_{md}}$
+2. Bernoulli prior controlling the number of 1s in every code.
+E.g. /step-exp prior/
+
+[[file:figures/prior.png]]
+$$  p(u = 1) = \tfrac{1}{2} \mathrm{H}( 1 - q ) + \tfrac{1}{2} \mathrm{H}(q-1) e^{-a(q-1)} $$
+
+** Effect of sparsity prior
+[[file:figures/a4_10_5_sparse.gif]]
+
+* Example -- MNIST
+- 200 images of the units 2, 7, 9
+- Two hidden layers, with 30 and 6 units respectively.
+** Sampling
+[[file:figures/mnist_sampler.png]]
+** Reconstructions
+From the corresponding representations in layer 1 (left) and layer 2 (right)
+
+[[file:figures/recon_1.png]]
+[[file:figures/recon_2.png]]
+** Patterns
+[[file:figures/snb_small_1.png]]
+** Patterns
+[[file:figures/snb_small_2.png]]
+
+* Next steps
+- /Slice sampling/
+- Real data
+- Scaling

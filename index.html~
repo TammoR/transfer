@@ -1,0 +1,246 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>The Hamming Machine</title>
+<meta name="author" content="(Tammo Rukat)"/>
+
+<link rel="stylesheet" href="./css/reveal.css"/>
+<link rel="stylesheet" href="./css/theme/sky.css" id="theme"/>
+
+<!-- If the query includes 'print-pdf', include the PDF print sheet -->
+<script>
+    if( window.location.search.match( /print-pdf/gi ) ) {
+        var link = document.createElement( 'link' );
+        link.rel = 'stylesheet';
+        link.type = 'text/css';
+        link.href = './css/print/pdf.css';
+        document.getElementsByTagName( 'head' )[0].appendChild( link );
+    }
+</script>
+<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+<section id="sec-title-slide">
+<h1>The Hamming Machine</h1>
+<h2>Tammo Rukat</h2>
+<h2>March 10, 2016</h2>
+</section>
+<section id="table-of-contents">
+<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#/slide-sec-1">Basics</a></li>
+<li><a href="#/slide-sec-2">Sigmoid Belief Net</a></li>
+<li><a href="#/slide-sec-3">Inference</a></li>
+<li><a href="#/slide-sec-4">Multilayer Hamming Machine</a></li>
+<li><a href="#/slide-sec-5">Toy Example</a></li>
+<li><a href="#/slide-sec-6">Sparsity priors</a></li>
+<li><a href="#/slide-sec-7">Example &#x2013; MNIST</a></li>
+<li><a href="#/slide-sec-8">Next steps</a></li>
+</ul>
+</div>
+</div>
+</section>
+
+<section>
+<section id="slide-sec-1">
+<h2 id="sec-1">Basics</h2>
+<ul>
+<li data-fragment-index="1" class="fragment appear">Based on the hamming distance between two binary vectors \({h(\mathbf{x},\mathbf{u})}\) we construct a probability distribution of \({\mathbf{x}}\) given \({\mathbf{u}}\) with a dispersion parameter \({\lambda}\): $$ p(\mathbf{x}|\mathbf{u}) \propto \exp\left[ -\lambda h(\mathbf{x},\mathbf{u}) \right] $$</li>
+<li data-fragment-index="2" class="fragment appear">We assume a set of \({M}\) binary vectors \({\mathbf{u}_{1\ldots M}}\), that we call <b>codes</b>.</li>
+<li data-fragment-index="3" class="fragment appear">Each observations \({\mathbf{x} }\) is generated from a subset of these codes: $$ p(\mathbf{x}|\mathbf{U},\mathbf{s},\lambda) \propto \prod\limits_m p(\mathbf{x}|\mathbf{u}_m,\lambda)^{s_m} = \prod\limits_d \exp\left[ \sum_m s_m \lambda h(x_d,u_{md}) \right]$$</li>
+<li data-fragment-index="4" class="fragment appear">We find the normalised probability to be sigmoidal: $$ p(x_d = 1|\mathbf{s}, \mathbf{U}, \lambda) = \frac{1}{1+\exp\left[ \lambda \sum_m s_m (2u_{md} - 1) \right]} $$</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-sec-2">
+<h2 id="sec-2">Sigmoid Belief Net</h2>
+<ul>
+<li>$$ p(x_d = 1|\mathbf{s}, \mathbf{U}, \lambda) =\frac{1}{1+\exp\left[ \lambda \sum_m s_m (2u_{md} - 1) \right]} $$</li>
+
+</ul>
+
+
+
+<div class="figure">
+<p><img src="figures/hm0_1.png" alt="hm0_1.png" />
+</p>
+</div>
+
+</section>
+</section>
+<section>
+<section id="slide-sec-3">
+<h2 id="sec-3">Inference</h2>
+<ul>
+<li data-fragment-index="1" class="fragment appear">Gibbs sampling for \({\mathbf{u}}\) and \({\mathbf{s}}\) with uninformative priors.</li>
+<li data-fragment-index="2" class="fragment appear">Metropolis Hastings for \(\lambda\) with inverse gamma prior.</li>
+<li data-fragment-index="3" class="fragment appear">Precomputing quantities of the form $$ \log(1+e^{-\lambda m}); \,\,\,\, \text{for} \, m \in \{-M,\ldots,-1,0,1,\ldots,M\} $$ speeds up the computation.</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-sec-4">
+<h2 id="sec-4">Multilayer Hamming Machine</h2>
+
+<div class="figure">
+<p><img src="figures/hm2.png" alt="hm2.png" />
+</p>
+</div>
+<ul>
+<li>The lower layer acts like a prior on the peripheral layer.</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-sec-5">
+<h2 id="sec-5">Toy Example</h2>
+
+<div class="figure">
+<p><img src="figures/a4_10_5.gif" alt="a4_10_5.gif" />
+</p>
+</div>
+
+</section>
+</section>
+<section>
+<section id="slide-sec-6">
+<h2 id="sec-6">Sparsity priors</h2>
+<ol>
+<li>Independent Bernoulli prior on every single code unit \({u_{md}}\)</li>
+<li>Bernoulli prior controlling the number of 1s in every code.</li>
+
+</ol>
+<p>
+E.g. <i>step-exp prior</i>
+</p>
+
+<p>
+<img src="figures/prior.png" alt="prior.png" />
+$$  p(u = 1) = \tfrac{1}{2} \mathrm{H}( 1 - q ) + \tfrac{1}{2} \mathrm{H}(q-1) e^{-a(q-1)} $$
+</p>
+
+</section>
+<section id="slide-sec-6-1">
+<h3 id="sec-6-1">Effect of sparsity prior</h3>
+
+<div class="figure">
+<p><img src="figures/a4_10_5_sparse.gif" alt="a4_10_5_sparse.gif" />
+</p>
+</div>
+
+</section>
+</section>
+<section>
+<section id="slide-sec-7">
+<h2 id="sec-7">Example &#x2013; MNIST</h2>
+<ul>
+<li>200 images of the units 2, 7, 9</li>
+<li>Two hidden layers, with 30 and 6 units respectively.</li>
+
+</ul>
+</section>
+<section id="slide-sec-7-1">
+<h3 id="sec-7-1">Sampling</h3>
+
+<div class="figure">
+<p><img src="figures/mnist_sampler.png" alt="mnist_sampler.png" />
+</p>
+</div>
+</section>
+<section id="slide-sec-7-2">
+<h3 id="sec-7-2">Reconstructions</h3>
+<p>
+From the corresponding representations in layer 1 (left) and layer 2 (right)
+</p>
+
+<p>
+<img src="figures/recon_1.png" alt="recon_1.png" />
+<img src="figures/recon_2.png" alt="recon_2.png" />
+</p>
+</section>
+<section id="slide-sec-7-3">
+<h3 id="sec-7-3">Patterns</h3>
+
+<div class="figure">
+<p><img src="figures/snb_1_1.png" alt="snb_1_1.png" />
+</p>
+</div>
+</section>
+<section id="slide-sec-7-4">
+<h3 id="sec-7-4">Patterns</h3>
+
+<div class="figure">
+<p><img src="figures/snb_0_1.png" alt="snb_0_1.png" />
+</p>
+</div>
+
+</section>
+</section>
+<section>
+<section id="slide-sec-8">
+<h2 id="sec-8">Next steps</h2>
+<ul>
+<li><i>Slice sampling</i></li>
+<li>Genome data</li>
+
+</ul>
+</section>
+</section>
+</div>
+</div>
+
+<script src="./lib/js/head.min.js"></script>
+<script src="./js/reveal.js"></script>
+
+<script>
+// Full list of configuration options available here:
+// https://github.com/hakimel/reveal.js#configuration
+Reveal.initialize({
+
+controls: true,
+progress: true,
+history: false,
+center: true,
+slideNumber: true,
+rollingLinks: true,
+keyboard: true,
+overview: true,
+width: 1920,
+height: 1080,
+margin: 0.40,
+minScale: 0.30,
+maxScale: 2.50,
+
+theme: Reveal.getQueryHash().theme, // available themes are in /css/theme
+transition: Reveal.getQueryHash().transition || 'cube', // default/cube/page/concave/zoom/linear/fade/none
+transitionSpeed: 'default',
+multiplex: {
+    secret: '', // null if client
+    id: '', // id, obtained from socket.io server
+    url: '' // Location of socket.io server
+},
+
+// Optional libraries used to extend on reveal.js
+dependencies: [
+ { src: './plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+ { src: './plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+ { src: './plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+ { src: './plugin/notes/notes.js', async: true, condition: function() { return !!document.body.classList; } }
+]
+});
+</script>
+</body>
+</html>
