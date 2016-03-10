@@ -1,0 +1,10 @@
+.reveal p {
+    text-align: centre;
+}
+
+
+.panel ul
+{
+    display: inline-block;
+    width:33%;
+}
