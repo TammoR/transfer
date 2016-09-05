@@ -1,67 +1,372 @@
 #+TITLE: The Hamming Machine
 # #+AUTHOR: Yau Group meeting
-#+DATE: March 10, 2016
+#+DATE: September 7, 2016
 #+email: Tammo Rukat
 #+AUTHOR: Tammo Rukat
 
 # Careful: the ox-reveal.el that is acutally being used is in .emacs.d/elpa/ox-reveal-20150408.831
+#+REVEAL_EXTRA_CSS: ./local.css
 #+OPTIONS: reveal_single_file:t 
 #+OPTIONS: reveal_center:t reveal_progress:t reveal_history:nil reveal_control:f
 #+OPTIONS: reveal_mathjax:t reveal_rolling_links:f reveal_keyboard:t reveal_overview:t num:nil
 #+OPTIONS: reveal_width:1920 reveal_height:1080
 #+OPTIONS: toc:1
-#+REVEAL_MARGIN: 0.2
-#+REVEAL_MIN_SCALE: 0.3
-#+REVEAL_MAX_SCALE: 2.5
+#+REVEAL_MARGIN: 0.15
+#+REVEAL_MIN_SCALE: 0.5
+#+REVEAL_MAX_SCALE: 2
 #+REVEAL_TRANS: cube 
 # default|cube|page|concave|zoom|linear|fade|none.
 #+REVEAL_THEME: sky
  # sky, league, moon, solarized, league
 #+REVEAL_HLEVEL: 1
 #+REVEAL_PLUGINS: (highlight markdown notes)
-# #+REVEAL_EXTRA_CSS: ./local.css
 #+REVEAL_SLIDE_NUMBER: t
 #+REVEAL_DEFAULT_FRAG_STYLE: roll-in
 #+OPTIONS: org-reveal-center:t
 
-* Basics
+* Introducing the Hamming Machine
+# ** Motivation
+# - Discover structure and dependencies in categorial data
+#   - Meaningful and interpretable variables and parameters
+#   - Visualisation
+** Notation
+- Indices
+  + ${d = 1\ldots D\; \text{- features}}$
+  + ${n = 1\ldots N\; \text{- observations/specimens}}$
+  + ${l = 1\ldots L\; \text{- latent variables}}$
+  + ${k = 1\ldots K\; \text{- layers}}$
+- Variables
+  + ${x_{nd}\; \text{- observations}}$
+  + ${u_{ld}\; \text{- parameters}}$
+  + ${z_{nl}\; \text{- latent variables}}$
+** Model derivation
 #+ATTR_REVEAL: :frag (appear appear appear appear) :frag_idx (1 2 3 4)
-- Based on the hamming distance between two binary vectors ${h(\mathbf{x},\mathbf{u})}$ we construct a probability distribution of ${\mathbf{x}}$ given ${\mathbf{u}}$ with a dispersion parameter ${\lambda}$: $$ p(\mathbf{x}|\mathbf{u}) \propto \exp\left[ -\lambda h(\mathbf{x},\mathbf{u}) \right] $$
-- We assume a set of ${M}$ binary vectors ${\mathbf{u}_{1\ldots M}}$, that we call *codes*.
-- Each observations ${\mathbf{x} }$ is generated from a subset of these codes: $$ p(\mathbf{x}|\mathbf{U},\mathbf{s},\lambda) \propto \prod\limits_m p(\mathbf{x}|\mathbf{u}_m,\lambda)^{s_m} = \prod\limits_d \exp\left[ \sum_m s_m \lambda h(x_d,u_{md}) \right]$$
-- We find the normalised probability to be sigmoidal: $$ p(x_d = 1|\mathbf{s}, \mathbf{U}, \lambda) = \frac{1}{1+\exp\left[ \lambda \sum_m s_m (2u_{md} - 1) \right]} $$
+- Construct a conditional probability distribution based the hamming distance between two binary vectors, ${h(\mathbf{x},\mathbf{u})}$, and a dispersion parameter ${\lambda}$: $$ p(\mathbf{x}|\mathbf{u}) \propto \exp\left[ -\lambda \, h(\mathbf{x},\mathbf{u}) \right] $$
+- Each observations ${\mathbf{x} }$ is generated from a subset of binary *codes*: ${\mathbf{u}_{l{=}1\ldots L}}$, selected by a vector of binary latent variables ${\mathbf{z}}$ $$ p(\mathbf{x}|\mathbf{U},\mathbf{z},\lambda) \propto \prod\limits_l p(\mathbf{x}|\mathbf{u}_l,\lambda)^{z_l} = \prod\limits_d \exp\left[- \sum_l z_l \lambda h(x_d,u_{ld}) \right]$$
+- Normalising the likelihood for for binary observations yields a *logistic sigmoid*: $$ p(x_d = 1|\mathbf{z}, \mathbf{u}_{1\ldots L}, \lambda) = \frac{1}{1+\exp\left[-\lambda \sum\limits_l z_l (2u_{ld} - 1) \right]} = \sigma\left[-\lambda \sum_l z_l \tilde{u}_{ld} \right]$$
+- We defined the mapping from ${\{0,1\}}$ to ${\{{-}1,1\}\,}$: $\;\;{\tilde{u} = 2u{-}1}$ 
+** Graphical model representation
+- $$ p(\mathbf{x}_{n}|\mathbf{z}_n,\mathbf{U},\lambda) = \prod_d \text{Ber}  \left( x_{nd} |\sigma \left[ \lambda \sum\limits_{l=1}^L z_{ln} \tilde{u}_{ld}  \right] \right)$$
 
-* Sigmoid Belief Net
-- $$ p(x_d = 1|\mathbf{s}, \mathbf{U}, \lambda) =\frac{1}{1+\exp\left[ \lambda \sum_m s_m (2u_{md} - 1) \right]} $$
+[[file:single_layer_network.png]]
+** Toy example
+[[file:~/hamming_projects/simulation_studies/toy_tests/train_seed14_method-mmgarch-3/figures/sampler_002.png]]
+** Toy example
+[[file:~/hamming_projects/simulation_studies/toy_tests/train_seed14_method-mmgarch-3/figures/animation.gif]]
+* Synthetic example: Calculator digits
+#+ATTR_HTML: :width 70% :height 50%
+[[file:~/hamming_projects/simulation_studies/figures/calculator/digits.png]]
+- Each digit is composed of a subset of 7 distinct bars.
+** Noiseless calculator digits
+#+REVEAL_HTML: <div class="column" style="float:left; width: 25%">
+[[file:~/hamming_projects/local_figs/nonsparse_noisefree_data.png]]
+compressed data
+#+REVEAL_HTML: </div>
+
+#+REVEAL_HTML: <div class="column" style="float:left; width: 25%">
+[[~/hamming_projects/local_figs/nonsparse_noisefreeU0.png]]
+inferred codes
+#+REVEAL_HTML: </div>
+
+#+REVEAL_HTML: <div class="column" style="float:left; width: 25%">
+[[~/hamming_projects/local_figs/codes_recon_new.png]]
+uncompressed inferred codes
+#+REVEAL_HTML: </div>
+
+#+REVEAL_HTML: <div class="column" style="float:left; width: 25%">
+[[~/hamming_projects/local_figs/nonsparse_noisefreeZ0.png]]
+inferred latent variables
+#+REVEAL_HTML: </div>
+
+#+REVEAL_HTML: <div class="column" style="float:left; width: 50%">
+#+ATTR_REVEAL: :frag appear
+- *What about 3, 8 and 9?*
+  + ${``7 + 2 + 5 = 3"}$
+  + ${``7 + 2 + 5 + 6 + 1 = 3"}$
+#+REVEAL_HTML: </div>
+
+** Other /perfect/ solutions
+#+REVEAL_HTML: <div class="column" style="float:left; width: 40%">
+#+ATTR_HTML: :width 70% :height 20%
+[[~/hamming_projects/local_figs/calc_simulations/snas714.png]]
+#+REVEAL_HTML: </div>
+
+#+REVEAL_HTML: <div class="column" style="float:left; width: 40%">
+#+ATTR_HTML: :width 70% :height 20%
+[[~/hamming_projects/local_figs/calc_simulations/snas715.png]]
+#+REVEAL_HTML: </div>
+
+#+REVEAL_HTML: <div class="column" style="float:left; width: 8%">
+#+ATTR_HTML: :width 80% :height 20%
+[[file:~/hamming_projects/local_logs/simulation_studies/perfect_digits/cbar.png]]
+#+REVEAL_HTML: </div>
 
 
-[[file:figures/hm0_1.png]]
+** Reconstruction Error
+#+ATTR_HTML: :width 90% :height 20%
+[[file:calc_dist.png]]
 
-* Inference
-#+ATTR_REVEAL: :frag (appear appear appear) :frag_idx (1 2 3)
-- Gibbs sampling for ${\mathbf{u}}$ and ${\mathbf{s}}$ with uninformative priors.
-- Metropolis Hastings for $\lambda$ with inverse gamma prior and adaptive Gaussian proposal distribution.
-- Precomputing quantities of the form $$ \log(1+e^{-\lambda m}); \,\,\,\, \text{for} \, m \in \{-M,\ldots,-1,0,1,\ldots,M\} $$ speeds up the computation.
+** Denoising
+#+REVEAL_HTML: <div class="column" style="float:left; width: 40%">
+- Calculator digits with 10% noise.
+#+REVEAL_HTML: </div>
 
-* Multilayer Hamming Machine
-[[file:figures/hm2.png]]
-- The lower layer acts like a prior on the peripheral layer.
+#+REVEAL_HTML: <div class="column" style="float:left; width: 100%">
+#+REVEAL_HTML: </div>
 
-* Toy Example
-[[file:figures/a4_10_5.gif]]
 
-* Sparsity priors
+#+REVEAL_HTML: <div class="column" style="float:left; width: 25%">
+#+ATTR_HTML: :width 80% :height 20%
+file:~/hamming_projects/server_figs/recon_example32.png
+Denoised digits
+#+REVEAL_HTML: </div>
+
+#+REVEAL_HTML: <div class="column" style="float:left; width: 25%">
+#+ATTR_HTML: :width 80% :height 20%
+file:~/hamming_projects/server_figs/recon_example42.png
+Denoised digits
+#+REVEAL_HTML: </div>
+
+
+#+REVEAL_HTML: <div class="column" style="float:left; width: 30%">
+#+ATTR_HTML: :width 80% :height 20%
+file:~/hamming_projects/server_figs/recon_example_snas.png
+Corresponding codes
+#+REVEAL_HTML: </div>
+
+* The multi-layer Hamming Machine
+[[file:twolayer_hm.png]]
+
+The joint density factorises in terms of the form p(layer|parents)
+
+With ${\mathbf{z}^{[0]}_n = \mathbf{x}_n}$ and ${L^{[0]} = D}$, that is
+$$  p(\mathbf{Z}^{[0:K]},\mathbf{U}^{[1:K]},\lambda) = 
+  p(\mathbf{Z}^{[K]}) \prod_{k=0}^{K-1} p(\mathbf{Z}^{[k]}|\mathbf{Z}^{[k{+}1]},\mathbf{U}^{[k{+}1]},\lambda^{[k{+}1]})\, p(\mathbf{U}^{[k{+}1]})\, p(\lambda^{[k{+}1]}) 
+$$
+* Inference and learning
+** Abbrevations
+- /Observation count matrix/: $$ a_{nd} = \tilde{x}_{nd} \sum\limits_{l = 1}^{M} z_{ln} \tilde{u}_{ld} $$ $$ a_{nd} \in \{-L,\ldots,-1,0,1,\ldots,L \} $$
+- Enables us to write the likelihood: $$ \mathcal{L}(\mathbf{U},\mathbf{Z},\lambda) = \prod_{n,d} \sigma \left[ \lambda a_{nd} \right] $$
+** Gibbs sampling -- full conditionals
+- Precomputed quantities $$  \gamma_{\lambda}(l) = \log(1+e^{-\lambda l}) $$
+- Full conditionals $$  p(u_{ld}=1|\text{rest}) = \sigma \left[-\tilde{u}_{ld} \sum\limits_n \left\{ \gamma_{\lambda}(a_{nd}) - \gamma_{\lambda}(a_{nd} -  \tilde{u}_{ld} \,\tilde{x}_{nd} (\tilde{z}_{nl}+1) )\right\} \right] $$ $$ p(z_{nl}{=}1|\text{rest}) = \sigma\left[ -\tilde{z}_{ln} \sum\limits_d \left\{ \gamma_{\lambda}\left(a_{nd}\right) - \gamma_{\lambda}\left(a_{nd}-\tilde{z}_{ln}\,\tilde{x}_{nd}\,\tilde{u}_{ld}\right) \right\} \right] $$
+- Multilayer conditionals $$ p(z^{[k]}_{nl}{=}1) = \sigma\left[-\tilde{z}_{nl} \sum\limits_{d} \left\{ \log \left( 1 + \exp \left[ -\lambda a_{nd} \right] \right)
+    -\log\left( 1 + \exp\left[ -\lambda (a_{nd} - \tilde{z}_{nl} \tilde{x}_{nd} \tilde{u}_{ld} \right) \right] \right)  \right. 
+  \left. + \lambda^{[k+1]} \sum\limits_{l^{[k+1]}} \tilde{u}^{[k+1]}_{l^{[k+1]}l}\; z_{nl}^{[k+1]} \right] $$
+** The modified metropolised Gibbs sampler
+#+ATTR_REVEAL: :frag (appear appear appear appear appear) :frag_idx (1 2 3 4 5)
+- Instead of drawing from the full conditional we always propose a value ${y'}$ that is different from the current value ${y}$, i.e. ${y' = 1-y}$.
+- The proposal distribution then takes the form $$ q(y'|y\neq y') = 1 = \frac{p(y'|\text{rest})}{1-p(y|\text{rest})} $$
+- And the Hasting acceptance ratio, equal the mutation probability and is given by $$ p_{\text{mutation}}^{\text{modified}} = \frac{p(\mathbf{y}')q(y|y')}{p(\mathbf{y})q(y'|y)} = \frac{p(y'|\text{rest})}{1-p(y'|\text{rest})} $$
+- The Gibbs mutation probability is given by $$ p_{\text{mutation}}^{\text{Gibbs}} = p(y'|\text{rest}) $$
+- And therefor the modified sampler has a *higher mutation probability* $$  p_{\text{mutation}}^{\text{modified}} > p_{\text{mutation}}^{\text{Gibbs}} $$
+** Alternative sampling schemes
+*** Approaches
+1. Forward-filtering backward-sampling for joint updates across layers
+   - Using coniditional independence properties, like for hidden Markov models.
+2. Layer-wise training
+   - Start from the layer closest to the data
+   - Train until convergence
+   - /Turn on/ layer below
+3. Simulated reheating
+   - After convergence, reheat the system by means of the dispersion parameter $\lambda$.
+   - Sample at fixed high temperature
+   - Converge back to equilibrium temperature
+4. Parallel tempering
+   - Swapping states between chains is extremely unlikely
+*** Results
+#+REVEAL_HTML: <div class="column" style="float:left; width: 50%">
+#+ATTR_HTML: :width 65% :height 20%
+[[~/hamming_projects/improve_inference/shared_logs/comparsion_overall.png]]
+
+Joint ${p(\mathbf{X},\mathbf{Z}_1,\mathbf{Z}_2|\mathbf{U},\lambda_0)}$
+#+REVEAL_HTML: </div>
+
+#+REVEAL_HTML: <div class="column" style="float:left; width: 50%">
+#+ATTR_HTML: :width 65% :height 20%
+[[~/hamming_projects/improve_inference/shared_logs/comparsion_layer1.png]]
+
+Data layer ${p(\mathbf{X}|\mathbf{Z}_1,\mathbf{U},\lambda_1)}$
+#+REVEAL_HTML: </div>
+
+#+REVEAL_HTML: <div class="column" style="float:left; width: 50%">
+#+ATTR_HTML: :width 65% :height 20%
+[[~/hamming_projects/improve_inference/shared_logs/comparsion_layer2.png]]
+
+Data layer ${p(\mathbf{Z}_1|\mathbf{Z}_2,\mathbf{U},\lambda_2)}$
+#+REVEAL_HTML: </div>
+
+#+REVEAL_HTML: <div class="column" style="float:left; width: 50%">
+#+ATTR_HTML: :width 65% :height 20%
+[[~/hamming_projects/improve_inference/shared_logs/comparsion_layer3.png]]
+
+Data layer ${p(\mathbf{Z}_2|\mathbf{Z}_3,\mathbf{U},\lambda_3)}$
+#+REVEAL_HTML: </div>
+
+* Priors on the codes
+** Effect on the conditionals
+- A Bernoulli prior on a single code unit ${u_{ld}}$:
+$$ p(u_{ld}=1|\text{rest}) = \sigma \left[\color{red}{ \log\left(  \frac{ p(u_{ld}) }{ 1 - p(u_{ld}) } \right)} - \tilde{u}_{ld} \sum\limits_n \left\{ \gamma_{\lambda}(a_{nd}) - \gamma_{\lambda}(a_{nd} - \tilde{u}_{ld}\,\tilde{x}_{nd} (\tilde{s}_{mn} + 1))\right\} \right] $$
+
+** Types of priors
+#+REVEAL_HTML: <div class="column" style="float:left; width: 55%">
 1. Independent Bernoulli prior on every single code unit ${u_{md}}$
-2. Bernoulli prior controlling the number of 1s in every code.
+2. Bernoulli prior controlling the number of 1s in every code. q is the ratio of 1s in code to 1s in data.
+#+REVEAL_HTML: </div>
+
+#+REVEAL_HTML: <div class="column" style="float:left; width: 100%">
 E.g. /step-exp prior/
+#+REVEAL_HTML: </div>
 
 [[file:figures/prior.png]]
 $$  p(u = 1) = \tfrac{1}{2} \mathrm{H}( 1 - q ) + \tfrac{1}{2} \mathrm{H}(q-1) e^{-a(q-1)} $$
-
-** Effect of sparsity prior
+** Effect of the prior for synthetic data - flat prior (old example)
+[[file:figures/a4_10_5.gif]]
+** Effect of the prior for synthetic data - step exp sparsity prior
 [[file:figures/a4_10_5_sparse.gif]]
+* Cancer mutational landscapes
+** First hidden layer
+#+REVEAL_HTML: <div class="column" style="float:left; width: 72%">
 
-* Example -- MNIST
+#+REVEAL_HTML: <div class="column" style="float:left; width: 25%">
+#+ATTR_HTML: :width 100% :height 20%
+[[~/hamming_projects/local_figs/gabor/pancan/latent_hm0.png]]
+#+REVEAL_HTML: </div>
+
+#+REVEAL_HTML: <div class="column" style="float:left; width: 25%">
+#+ATTR_HTML: :width 100% :height 20%
+[[~/hamming_projects/local_figs/gabor/pancan/latent_hm2.png]]
+#+REVEAL_HTML: </div>
+
+#+REVEAL_HTML: <div class="column" style="float:left; width: 25%">
+#+ATTR_HTML: :width 100% :height 20%
+[[~/hamming_projects/local_figs/gabor/pancan/latent_hm1.png]]
+#+REVEAL_HTML: </div>
+
+#+REVEAL_HTML: <div class="column" style="float:left; width: 25%">
+#+ATTR_HTML: :width 100% :height 20%
+[[~/hamming_projects/local_figs/gabor/pancan/latent_hm3.png]]
+#+REVEAL_HTML: </div>
+- Test Test Test Test Test Test Test Test Test Test Test 
+#+REVEAL_HTML: </div>
+
+#+REVEAL_HTML: <div class="column" style="float:left; width: 28%">
+#+ATTR_HTML: :width 70% :height 20%
+[[~/hamming_projects/local_figs/gabor/pancan/snas_0.png]]
+#+REVEAL_HTML: </div>
+
+** Second hidden layer
+#+REVEAL_HTML: <div class="column" style="float:left; width: 72%">
+
+#+REVEAL_HTML: <div class="column" style="float:left; width: 25%">
+#+ATTR_HTML: :width 100% :height 20%
+[[~/hamming_projects/local_figs/gabor/pancan/latent_hm0_0.png]]
+#+REVEAL_HTML: </div>
+
+#+REVEAL_HTML: <div class="column" style="float:left; width: 25%">
+#+ATTR_HTML: :width 100% :height 20%
+[[~/hamming_projects/local_figs/gabor/pancan/latent_hm2_0.png]]
+#+REVEAL_HTML: </div>
+
+#+REVEAL_HTML: <div class="column" style="float:left; width: 25%">
+#+ATTR_HTML: :width 100% :height 20%
+[[~/hamming_projects/local_figs/gabor/pancan/latent_hm1_0.png]]
+#+REVEAL_HTML: </div>
+
+#+REVEAL_HTML: <div class="column" style="float:left; width: 25%">
+#+ATTR_HTML: :width 100% :height 20%
+[[~/hamming_projects/local_figs/gabor/pancan/latent_hm3_0.png]]
+#+REVEAL_HTML: </div>
+- Test Test Test Test Test Test Test Test Test Test Test 
+#+REVEAL_HTML: </div>
+
+#+REVEAL_HTML: <div class="column" style="float:left; width: 28%">
+#+ATTR_HTML: :width 75% :height 20%
+[[~/hamming_projects/local_figs/gabor/pancan/snas_1.png]]
+#+REVEAL_HTML: </div>
+** PCA
+#+REVEAL_HTML: <div class="column" style="float:left; width: 50%">
+[[~/hamming_projects/local_figs/gabor/pancan/pca_0.png]]
+#+REVEAL_HTML: </div>
+#+REVEAL_HTML: <div class="column" style="float:left; width: 50%">
+[[~/hamming_projects/local_figs/gabor/pancan/pca_1.png]]
+#+REVEAL_HTML: </div>
+** tSNE
+#+REVEAL_HTML: <div class="column" style="float:left; width: 50%">
+#+ATTR_HTML: :width 130% :height 100%
+[[~/hamming_projects/local_figs/gabor/pancan/tsne_0.png]]
+#+REVEAL_HTML: </div>
+#+REVEAL_HTML: <div class="column" style="float:left; width: 50%">
+#+ATTR_HTML: :width 130% :height 1000%
+[[~/hamming_projects/local_figs/gabor/pancan/tsne_1.png]]
+#+REVEAL_HTML: </div>
+** Comparison to binary PCA
+* The sparse Hamming Machine
+** Motivation
+- The /problem/: Every code has to vote on every feature. If a code believes that certain features appear together, than it necessarily provides the same evidence for all other features to no appear.
+- This may not reflect the generative process that we wish to capture.
+- Proposed modification: $$ \tilde{u} \in \{-1,1\} \;\; \rightarrow \;\; \tilde{u} \in \{-1,0,1\} $$
+- This yields the full conditional: $$   p(\tilde{u}_{ld}|\text{rest}) =
+   \text{Cat} \left( \underset{\tilde{u}' \in \{-1,0,1\}}{\mathcal{S}} \left[ - \sum\limits_n \gamma_{\lambda}(a_{nd,\tilde{u}'}) \right] \right) $$
+** Synthetic example
+#+REVEAL_HTML: <div class="column" style="float:left; width: 25%">
+[[~/hamming_projects/local_figs/gabor/sparse_Hm/nonsparse_noisy_newdata.png]]
+compressed data
+#+REVEAL_HTML: </div>
+
+#+REVEAL_HTML: <div class="column" style="float:left; width: 25%">
+[[~/hamming_projects/local_figs/gabor/sparse_Hm/calc_digits_codesviva.png]]
+inferred codes
+#+REVEAL_HTML: </div>
+
+#+REVEAL_HTML: <div class="column" style="float:left; width: 25%">
+[[~/hamming_projects/local_figs/gabor/sparse_Hm/calc_digits_sparse_codes_reconviva.png]]
+reconstruction of codes
+#+REVEAL_HTML: </div>
+
+#+REVEAL_HTML: <div class="column" style="float:left; width: 25%">
+[[~/hamming_projects/local_figs/gabor/sparse_Hm/nonsparse_noisy_newZ0.png]]
+latent variables
+
+#+REVEAL_HTML: </div>
+
+#+REVEAL_HTML: <div class="column" style="float:left; width: 20%">
+[[~/hamming_projects/local_figs/gabor/sparse_Hm/calc_digits_sparse_codes_reconviva_3.png]]
+codes for ${L{=}3}$
+#+REVEAL_HTML: </div>
+
+#+REVEAL_HTML: <div class="column" style="float:left; width: 20%">
+[[/home/tammo/hamming_projects/local_figs/rgb_simplex.png]]
+color legend
+#+REVEAL_HTML: </div>
+
+#+REVEAL_HTML: <div class="column" style="float:left; width: 60%">
+
+- Latent representation are sparser than for the traditional HM
+- The /obvious/ single-bar representation takes L=14 codes.
+#+REVEAL_HTML: </div>
+
+** Reconstruction error
+#+ATTR_HTML: :width 80% :height 50%
+[[~/hamming_projects/local_figs/blackgoose/distr.png]]
+
+* Future work
+** The minimal Hamming Machine
+- A very intuitive way of combining codes to generate observations. $$  p(x_{nd}=1|\mathbf{u}_d,\mathbf{z}_n) \propto \exp\left[{\lambda\, h(x,\min(\mathbf{u}^T\mathbf{z},1))} \right] $$
+- The binomial parameter for node $x_{nd}$ takes one of only 2 possible values, ${\sigma(\pm \lambda)}$.
+  - It equals ${\sigma(+\lambda)}$ if a single pair of its parent variables is /turned on/, $(z_{nl},u_{ld}) = (1,1)$, indepedent of the value of all other parents.
+  - It equald ${-\lambda}$ if all parents are /turned off/.
+** Scalable inference
+*** Simple fixed point equations
+- Break the /explaining away/ dependency between the latent variables. $$ p(\mathbf{x}|\mathbf{z},\mathbf{u}) \approx \prod\limits_{d,l} \sigma\left[ \lambda x_{d} z_l \tilde{u}_{ld}  \right] $$
+- Iterate through all $z_{nl}$ and $u_{ld}$ and optimise every single one $$   \sum\limits_d \tilde{x}_{nd} \tilde{u}_{ld} + \sum\limits_{l^{[2]}} z^{[2]}_{nl} \tilde{u}^{[2]}_{ld} > 0 \; \rightarrow z_{nl} = 1,\; \text{else}\; z_{nl}=0 $$ $$  \sum\limits_n \tilde{x}_{nd} z_{nl} > 0 \; \rightarrow u_{ld} = 1,\; \text{else}\; u_{ld}=0 $$
+- This will converge very quickly but depend heavily on the intial conditions.
+** Further applications
+- Networks
+  - Adjacency matrices as input, e.g. brain networks from EEG/fMRI for different timepoints or different individuals.
+  - Binarised single cell expression data.
+  - Hannah/Garrett?
+* Appendix A: Further example -- MNIST
 - 200 images of the units 2, 7, 9
 - Two hidden layers, with 30 and 6 units respectively.
 ** Sampling
@@ -71,12 +376,10 @@ From the corresponding representations in layer 1 (left) and layer 2 (right)
 
 [[file:figures/recon_1.png]]
 [[file:figures/recon_2.png]]
-** Patterns
+** Codes
 [[file:figures/snb_small_1.png]]
-** Patterns
+** Codes
 [[file:figures/snb_small_2.png]]
 
-* Next steps
-- /Slice sampling/
-- Real data
-- Scaling
+
+

@@ -1,10 +1,13 @@
 .reveal p {
-    text-align: centre;
+    text-align: center;
 }
-
 
 .panel ul
 {
     display: inline-block;
     width:33%;
 }
+
+.reveal ul {
+    line-height: 1.6; }
+
