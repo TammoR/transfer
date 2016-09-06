@@ -26,25 +26,33 @@
 
 * Introducing the Hamming Machine
 # ** Motivation
-# - Discover structure and dependencies in categorial data
-#   - Meaningful and interpretable variables and parameters
-#   - Visualisation
+# - A latent variable model for categorical traits to learn features and representations that
+#   - Are meaningful and easily interpretable for a human observer
+#   - Can be exploited for machine learning tasks
+#   - Allow for the incorporation of prior domain knowledge
 ** Notation
 - Indices
-  + ${d = 1\ldots D\; \text{- features}}$
   + ${n = 1\ldots N\; \text{- observations/specimens}}$
-  + ${l = 1\ldots L\; \text{- latent variables}}$
+  + ${d = 1\ldots D\; \text{- features (e.g. pixels or genes)}}$
+  + ${l = 1\ldots L\; \text{- latent dimensions}}$
   + ${k = 1\ldots K\; \text{- layers}}$
 - Variables
   + ${x_{nd}\; \text{- observations}}$
-  + ${u_{ld}\; \text{- parameters}}$
-  + ${z_{nl}\; \text{- latent variables}}$
+  + ${u_{ld}\; \text{- parameters (globale variables, weights)}}$
+  + ${z_{nl}\; \text{- latent variables (local variables)}}$
+#+BEGIN_NOTES
+  Make clear what variables are as compared to parameters. Only difference here is wrt what they are local.
+#+END_NOTES
 ** Model derivation
 #+ATTR_REVEAL: :frag (appear appear appear appear) :frag_idx (1 2 3 4)
-- Construct a conditional probability distribution based the hamming distance between two binary vectors, ${h(\mathbf{x},\mathbf{u})}$, and a dispersion parameter ${\lambda}$: $$ p(\mathbf{x}|\mathbf{u}) \propto \exp\left[ -\lambda \, h(\mathbf{x},\mathbf{u}) \right] $$
+- Construct a probability distribution based on the hamming distance between two binary vectors, ${h(\mathbf{x},\mathbf{u})}$, and a dispersion parameter ${\lambda}$: $$ p(\mathbf{x}|\mathbf{u}) \propto \exp\left[ -\lambda \, h(\mathbf{x},\mathbf{u}) \right] $$
 - Each observations ${\mathbf{x} }$ is generated from a subset of binary *codes*: ${\mathbf{u}_{l{=}1\ldots L}}$, selected by a vector of binary latent variables ${\mathbf{z}}$ $$ p(\mathbf{x}|\mathbf{U},\mathbf{z},\lambda) \propto \prod\limits_l p(\mathbf{x}|\mathbf{u}_l,\lambda)^{z_l} = \prod\limits_d \exp\left[- \sum_l z_l \lambda h(x_d,u_{ld}) \right]$$
 - Normalising the likelihood for for binary observations yields a *logistic sigmoid*: $$ p(x_d = 1|\mathbf{z}, \mathbf{u}_{1\ldots L}, \lambda) = \frac{1}{1+\exp\left[-\lambda \sum\limits_l z_l (2u_{ld} - 1) \right]} = \sigma\left[-\lambda \sum_l z_l \tilde{u}_{ld} \right]$$
 - We defined the mapping from ${\{0,1\}}$ to ${\{{-}1,1\}\,}$: $\;\;{\tilde{u} = 2u{-}1}$ 
+#+BEGIN_NOTES
+  - We use the tilde mapping throughout
+  - This migh be a bit unconventional
+#+END_NOTES
 ** Graphical model representation
 - $$ p(\mathbf{x}_{n}|\mathbf{z}_n,\mathbf{U},\lambda) = \prod_d \text{Ber}  \left( x_{nd} |\sigma \left[ \lambda \sum\limits_{l=1}^L z_{ln} \tilde{u}_{ld}  \right] \right)$$
 
@@ -147,19 +155,23 @@ $$
 ** Abbrevations
 - /Observation count matrix/: $$ a_{nd} = \tilde{x}_{nd} \sum\limits_{l = 1}^{M} z_{ln} \tilde{u}_{ld} $$ $$ a_{nd} \in \{-L,\ldots,-1,0,1,\ldots,L \} $$
 - Enables us to write the likelihood: $$ \mathcal{L}(\mathbf{U},\mathbf{Z},\lambda) = \prod_{n,d} \sigma \left[ \lambda a_{nd} \right] $$
-** Gibbs sampling -- full conditionals
-- Precomputed quantities $$  \gamma_{\lambda}(l) = \log(1+e^{-\lambda l}) $$
+** Random scann Gibbs sampling - conditional
 - Full conditionals $$  p(u_{ld}=1|\text{rest}) = \sigma \left[-\tilde{u}_{ld} \sum\limits_n \left\{ \gamma_{\lambda}(a_{nd}) - \gamma_{\lambda}(a_{nd} -  \tilde{u}_{ld} \,\tilde{x}_{nd} (\tilde{z}_{nl}+1) )\right\} \right] $$ $$ p(z_{nl}{=}1|\text{rest}) = \sigma\left[ -\tilde{z}_{ln} \sum\limits_d \left\{ \gamma_{\lambda}\left(a_{nd}\right) - \gamma_{\lambda}\left(a_{nd}-\tilde{z}_{ln}\,\tilde{x}_{nd}\,\tilde{u}_{ld}\right) \right\} \right] $$
 - Multilayer conditionals $$ p(z^{[k]}_{nl}{=}1) = \sigma\left[-\tilde{z}_{nl} \sum\limits_{d} \left\{ \log \left( 1 + \exp \left[ -\lambda a_{nd} \right] \right)
     -\log\left( 1 + \exp\left[ -\lambda (a_{nd} - \tilde{z}_{nl} \tilde{x}_{nd} \tilde{u}_{ld} \right) \right] \right)  \right. 
   \left. + \lambda^{[k+1]} \sum\limits_{l^{[k+1]}} \tilde{u}^{[k+1]}_{l^{[k+1]}l}\; z_{nl}^{[k+1]} \right] $$
+- Precomputed quantities $$  \gamma_{\lambda}(l) = \log(1+e^{-\lambda l}) $$
+#+BEGIN_NOTES
+- Discuss random scan Gibbs sampling compared to other scan strategies
+#+END_NOTES
+
 ** The modified metropolised Gibbs sampler
 #+ATTR_REVEAL: :frag (appear appear appear appear appear) :frag_idx (1 2 3 4 5)
 - Instead of drawing from the full conditional we always propose a value ${y'}$ that is different from the current value ${y}$, i.e. ${y' = 1-y}$.
 - The proposal distribution then takes the form $$ q(y'|y\neq y') = 1 = \frac{p(y'|\text{rest})}{1-p(y|\text{rest})} $$
 - And the Hasting acceptance ratio, equal the mutation probability and is given by $$ p_{\text{mutation}}^{\text{modified}} = \frac{p(\mathbf{y}')q(y|y')}{p(\mathbf{y})q(y'|y)} = \frac{p(y'|\text{rest})}{1-p(y'|\text{rest})} $$
 - The Gibbs mutation probability is given by $$ p_{\text{mutation}}^{\text{Gibbs}} = p(y'|\text{rest}) $$
-- And therefor the modified sampler has a *higher mutation probability* $$  p_{\text{mutation}}^{\text{modified}} > p_{\text{mutation}}^{\text{Gibbs}} $$
+- And therefore the modified sampler has a *higher mutation probability* $$  p_{\text{mutation}}^{\text{modified}} > p_{\text{mutation}}^{\text{Gibbs}} $$
 ** Alternative sampling schemes
 *** Approaches
 1. Forward-filtering backward-sampling for joint updates across layers
@@ -203,11 +215,13 @@ Data layer ${p(\mathbf{Z}_1|\mathbf{Z}_2,\mathbf{U},\lambda_2)}$
 Data layer ${p(\mathbf{Z}_2|\mathbf{Z}_3,\mathbf{U},\lambda_3)}$
 #+REVEAL_HTML: </div>
 
-* Priors on the codes
+#+BEGIN_NOTES
+- Maybe explain the Lambda bug
+#+END_NOTES
+* Priors
 ** Effect on the conditionals
 - A Bernoulli prior on a single code unit ${u_{ld}}$:
 $$ p(u_{ld}=1|\text{rest}) = \sigma \left[\color{red}{ \log\left(  \frac{ p(u_{ld}) }{ 1 - p(u_{ld}) } \right)} - \tilde{u}_{ld} \sum\limits_n \left\{ \gamma_{\lambda}(a_{nd}) - \gamma_{\lambda}(a_{nd} - \tilde{u}_{ld}\,\tilde{x}_{nd} (\tilde{s}_{mn} + 1))\right\} \right] $$
-
 ** Types of priors
 #+REVEAL_HTML: <div class="column" style="float:left; width: 55%">
 1. Independent Bernoulli prior on every single code unit ${u_{md}}$
@@ -225,36 +239,25 @@ $$  p(u = 1) = \tfrac{1}{2} \mathrm{H}( 1 - q ) + \tfrac{1}{2} \mathrm{H}(q-1) e
 ** Effect of the prior for synthetic data - step exp sparsity prior
 [[file:figures/a4_10_5_sparse.gif]]
 * Cancer mutational landscapes
-** First hidden layer
-#+REVEAL_HTML: <div class="column" style="float:left; width: 72%">
-
-#+REVEAL_HTML: <div class="column" style="float:left; width: 25%">
-#+ATTR_HTML: :width 100% :height 20%
-[[~/hamming_projects/local_figs/gabor/pancan/latent_hm0.png]]
+** TCGA data
+127 specific cancer-associated genes are taken into account with specimens from four primary tissues
+- Acute myeloid leukemia --- AML (N=170)
+- Bladder urothelial carcinoma --- BLCA (N=97)
+- Colon adenocarcinoma --- COAD (N=155)
+- Uterine corpus endometrioid carcinoma --- UCEC (N=247)
+** Reference model: binary PCA
+$$ p(\mathbf{z}_{n}) = \mathcal{N}(0,\sigma^2\,\mathbb{I}) $$
+$$ p(x_{nd}=1|\mathbf{z}_n,\theta) = \sigma\left[ \tilde{\mathbf{u}}^T_d \mathbf{z}_n \right] $$
+$$ u_{ld}, z_{nl} \in \mathbb{R} $$
+#+REVEAL_HTML: <div class="column" style="float:left; width: 50%">
+[[~/hamming_projects/local_figs/gabor/pancan/pca_2d_z_scatter_0.png]]
+Latent embedding
 #+REVEAL_HTML: </div>
 
-#+REVEAL_HTML: <div class="column" style="float:left; width: 25%">
-#+ATTR_HTML: :width 100% :height 20%
-[[~/hamming_projects/local_figs/gabor/pancan/latent_hm2.png]]
+#+REVEAL_HTML: <div class="column" style="float:left; width: 50%">
+[[~/hamming_projects/local_figs/gabor/pancan/pca_2d_u_scatter_0_zoomed.png]]
+Principal components
 #+REVEAL_HTML: </div>
-
-#+REVEAL_HTML: <div class="column" style="float:left; width: 25%">
-#+ATTR_HTML: :width 100% :height 20%
-[[~/hamming_projects/local_figs/gabor/pancan/latent_hm1.png]]
-#+REVEAL_HTML: </div>
-
-#+REVEAL_HTML: <div class="column" style="float:left; width: 25%">
-#+ATTR_HTML: :width 100% :height 20%
-[[~/hamming_projects/local_figs/gabor/pancan/latent_hm3.png]]
-#+REVEAL_HTML: </div>
-- Test Test Test Test Test Test Test Test Test Test Test 
-#+REVEAL_HTML: </div>
-
-#+REVEAL_HTML: <div class="column" style="float:left; width: 28%">
-#+ATTR_HTML: :width 70% :height 20%
-[[~/hamming_projects/local_figs/gabor/pancan/snas_0.png]]
-#+REVEAL_HTML: </div>
-
 ** Second hidden layer
 #+REVEAL_HTML: <div class="column" style="float:left; width: 72%">
 
@@ -277,12 +280,48 @@ $$  p(u = 1) = \tfrac{1}{2} \mathrm{H}( 1 - q ) + \tfrac{1}{2} \mathrm{H}(q-1) e
 #+ATTR_HTML: :width 100% :height 20%
 [[~/hamming_projects/local_figs/gabor/pancan/latent_hm3_0.png]]
 #+REVEAL_HTML: </div>
-- Test Test Test Test Test Test Test Test Test Test Test 
+
+#+ATTR_REVEAL: :frag appear 
+- PTEN and PIK3 affect the cell-cycle regulating PIK3/AKT/mTOR pathway.
+- FLT3 is involved in regulation of hematopoiesis.
 #+REVEAL_HTML: </div>
 
 #+REVEAL_HTML: <div class="column" style="float:left; width: 28%">
 #+ATTR_HTML: :width 75% :height 20%
 [[~/hamming_projects/local_figs/gabor/pancan/snas_1.png]]
+#+REVEAL_HTML: </div>
+** First hidden layer
+#+REVEAL_HTML: <div class="column" style="float:left; width: 70%">
+
+#+REVEAL_HTML: <div class="column" style="float:left; width: 22%">
+#+ATTR_HTML: :width 100% :height 20%
+[[~/hamming_projects/local_figs/gabor/pancan/latent_hm0.png]]
+#+REVEAL_HTML: </div>
+
+#+REVEAL_HTML: <div class="column" style="float:left; width: 22%">
+#+ATTR_HTML: :width 100% :height 20%
+[[~/hamming_projects/local_figs/gabor/pancan/latent_hm2.png]]
+#+REVEAL_HTML: </div>
+
+#+REVEAL_HTML: <div class="column" style="float:left; width: 22%">
+#+ATTR_HTML: :width 100% :height 20%
+[[~/hamming_projects/local_figs/gabor/pancan/latent_hm1.png]]
+#+REVEAL_HTML: </div>
+
+#+REVEAL_HTML: <div class="column" style="float:left; width: 22%">
+#+ATTR_HTML: :width 100% :height 20%
+[[~/hamming_projects/local_figs/gabor/pancan/latent_hm3.png]]
+#+REVEAL_HTML: </div>
+
+#+ATTR_REVEAL: :frag (appear appear appear) :frag_idx(1 2 3)
+- Code ${z_{14}}$: NAV3 and APC are known to co-occur in various cancers. The code is active in almost all specimens
+- Code ${z_{11}}$: MLL2/3 is associated to AML (/MML -- myeloid/lymphoid leukemia/)
+- Code ${z_{9}}$: NFE2L2 (aka NrF2) encodes a transcription factor that is involved in the regulation inflammatory response
+#+REVEAL_HTML: </div>
+
+#+REVEAL_HTML: <div class="column" style="float:left; width: 28%">
+#+ATTR_HTML: :width 65% :height 20%
+[[~/hamming_projects/local_figs/gabor/pancan/snas_0.png]]
 #+REVEAL_HTML: </div>
 ** PCA
 #+REVEAL_HTML: <div class="column" style="float:left; width: 50%">
@@ -291,6 +330,9 @@ $$  p(u = 1) = \tfrac{1}{2} \mathrm{H}( 1 - q ) + \tfrac{1}{2} \mathrm{H}(q-1) e
 #+REVEAL_HTML: <div class="column" style="float:left; width: 50%">
 [[~/hamming_projects/local_figs/gabor/pancan/pca_1.png]]
 #+REVEAL_HTML: </div>
+#+BEGIN_NOTES
+- Could do a another layer with 2 dimension and plot these(!)
+#+END_NOTES
 ** tSNE
 #+REVEAL_HTML: <div class="column" style="float:left; width: 50%">
 #+ATTR_HTML: :width 130% :height 100%
@@ -300,7 +342,34 @@ $$  p(u = 1) = \tfrac{1}{2} \mathrm{H}( 1 - q ) + \tfrac{1}{2} \mathrm{H}(q-1) e
 #+ATTR_HTML: :width 130% :height 1000%
 [[~/hamming_projects/local_figs/gabor/pancan/tsne_1.png]]
 #+REVEAL_HTML: </div>
-** Comparison to binary PCA
+** Single layer HM
+#+REVEAL_HTML: <div class="column" style="float:left; width: 72%">
+
+#+REVEAL_HTML: <div class="column" style="float:left; width: 25%">
+#+ATTR_HTML: :width 100% :height 20%
+[[~/hamming_projects/local_figs/gabor/pancan/single_layer0.png]]
+#+REVEAL_HTML: </div>
+
+#+REVEAL_HTML: <div class="column" style="float:left; width: 25%">
+#+ATTR_HTML: :width 100% :height 20%
+[[~/hamming_projects/local_figs/gabor/pancan/single_layer1.png]]
+#+REVEAL_HTML: </div>
+
+#+REVEAL_HTML: <div class="column" style="float:left; width: 25%">
+#+ATTR_HTML: :width 100% :height 20%
+[[~/hamming_projects/local_figs/gabor/pancan/single_layer2.png]]
+#+REVEAL_HTML: </div>
+
+#+REVEAL_HTML: <div class="column" style="float:left; width: 25%">
+#+ATTR_HTML: :width 100% :height 20%
+[[~/hamming_projects/local_figs/gabor/pancan/single_layer3.png]]
+#+REVEAL_HTML: </div>
+#+REVEAL_HTML: </div>
+
+#+REVEAL_HTML: <div class="column" style="float:left; width: 28%">
+#+ATTR_HTML: :width 75% :height 20%
+[[~/hamming_projects/local_figs/gabor/pancan/snas_single.png]]
+#+REVEAL_HTML: </div>
 * The sparse Hamming Machine
 ** Motivation
 - The /problem/: Every code has to vote on every feature. If a code believes that certain features appear together, than it necessarily provides the same evidence for all other features to no appear.
@@ -349,24 +418,36 @@ color legend
 ** Reconstruction error
 #+ATTR_HTML: :width 80% :height 50%
 [[~/hamming_projects/local_figs/blackgoose/distr.png]]
-
 * Future work
 ** The minimal Hamming Machine
 - A very intuitive way of combining codes to generate observations. $$  p(x_{nd}=1|\mathbf{u}_d,\mathbf{z}_n) \propto \exp\left[{\lambda\, h(x,\min(\mathbf{u}^T\mathbf{z},1))} \right] $$
 - The binomial parameter for node $x_{nd}$ takes one of only 2 possible values, ${\sigma(\pm \lambda)}$.
   - It equals ${\sigma(+\lambda)}$ if a single pair of its parent variables is /turned on/, $(z_{nl},u_{ld}) = (1,1)$, indepedent of the value of all other parents.
   - It equald ${-\lambda}$ if all parents are /turned off/.
-** Scalable inference
-*** Simple fixed point equations
+** Scalable inference with mean field fixed point equations
 - Break the /explaining away/ dependency between the latent variables. $$ p(\mathbf{x}|\mathbf{z},\mathbf{u}) \approx \prod\limits_{d,l} \sigma\left[ \lambda x_{d} z_l \tilde{u}_{ld}  \right] $$
 - Iterate through all $z_{nl}$ and $u_{ld}$ and optimise every single one $$   \sum\limits_d \tilde{x}_{nd} \tilde{u}_{ld} + \sum\limits_{l^{[2]}} z^{[2]}_{nl} \tilde{u}^{[2]}_{ld} > 0 \; \rightarrow z_{nl} = 1,\; \text{else}\; z_{nl}=0 $$ $$  \sum\limits_n \tilde{x}_{nd} z_{nl} > 0 \; \rightarrow u_{ld} = 1,\; \text{else}\; u_{ld}=0 $$
 - This will converge very quickly but depend heavily on the intial conditions.
-** Further applications
-- Networks
-  - Adjacency matrices as input, e.g. brain networks from EEG/fMRI for different timepoints or different individuals.
-  - Binarised single cell expression data.
-  - Hannah/Garrett?
-* Appendix A: Further example -- MNIST
+** Prior knowledge and classification
+#+ATTR_REVEAL: :frag (appear appear) :frag_idx (1 2)
+- Prior kowledge can easily be incorporated for features and for the latent representations.
+  - E.g. the tumour labels can be one-hot latent states
+  - Different layers can correspond to different phenotypes. For instance:
+    - The tissue type (e.g. epithelial)
+    - The actual tissue of origin (colon)
+- This can be extended to a generative classifier.
+** Further areaos of application
+- Network clustering
+  - Adjacency matrices as input
+  - E.g. brain networks from EEG/fMRI for different timepoints or different individuals.
+- Single cell expression data.
+  - Binarised data for multivariate co-expression analysis.
+- Molecular fingerprints to disocver distinctive properties of compounds for drug discovery.
+  - (Planned collaboration with Hannah Patel, Garrett Morris.)
+* Appendix A: MLE of Lambda
+[[file:~/hamming_projects/local_figs/blackgull/pancan_lambda.png]]
+- Maximum likelihood estimates for lambda under variation of the layer size in a single-layer HM on TCGA mutation profiles
+* Appendix B: Further example -- MNIST
 - 200 images of the units 2, 7, 9
 - Two hidden layers, with 30 and 6 units respectively.
 ** Sampling
